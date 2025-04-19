@@ -5,6 +5,6 @@
   "documentation": "https://github.com/Chouffy/home_assistant_tgtg",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/Chouffy/home_assistant_tgtg/issues",
-  "requirements": ["tgtg-python @ git+https://github.com/Zappdidappdi/tgtg-python.git"],
+  "requirements": ["tgtg-python @ git+https://github.com/Zappdidappdi/tgtg-python.git","poetry"],
   "version": "5.6.2"
 }
