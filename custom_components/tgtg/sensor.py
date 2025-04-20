@@ -135,10 +135,8 @@ class TGTGDataUpdateCoordinator(DataUpdateCoordinator):
             
             # Get active orders - we'll do this only once for all sensors
             _LOGGER.info("GET ORDERS")
-            orders = await self.hass.async_add_executor_job(
-                self.tgtg_client.get_active
-            )
-            data["orders"] = orders.get("orders", [])
+            orders = ""
+            data["orders"] = ""
             
             # Get items data
             if self.items != [""]:
