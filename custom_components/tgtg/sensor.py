@@ -128,9 +128,9 @@ class TGTGDataUpdateCoordinator(DataUpdateCoordinator):
             
             # Get active orders - we'll do this only once for all sensors
             orders = await self.hass.async_add_executor_job(
-                self.tgtg_client.get_active
+                #self.tgtg_client.get_active
             )
-            data["orders"] = orders.get("orders", [])
+            #data["orders"] = orders.get("orders", [])
             
             # Get items data
             if self.items != [""]:
@@ -143,13 +143,12 @@ class TGTGDataUpdateCoordinator(DataUpdateCoordinator):
             else:
                 # Fetch favorites
                 favorites = await self.hass.async_add_executor_job(
-                    self.tgtg_client.get_items
+                    self.tgtg_client.get_favorites
                 )
                 for item in favorites:
                     item_id = item["item"]["item_id"]
-                    data[item_id] = await self.hass.async_add_executor_job(
-                        self.tgtg_client.get_item, item_id
-                    )
+                    _LOGGER.info("ITEM:" + item)
+                    data[item_id] = item
             
             return data
         except Exception as err:
