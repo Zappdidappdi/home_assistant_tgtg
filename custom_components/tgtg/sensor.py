@@ -9,7 +9,6 @@ from tgtg import TgtgClient
 
 from homeassistant.components.sensor import SensorEntity, PLATFORM_SCHEMA
 from homeassistant.const import CONF_ACCESS_TOKEN, CONF_EMAIL
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
@@ -63,22 +62,7 @@ async def async_setup_platform(
     add_entities: AddEntitiesCallback,
     discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
-    """Set up the TGTG sensor platform via YAML."""
-    await _setup_entities(hass, config, add_entities)
-
-
-async def async_setup_entry(
-    hass: HomeAssistant, entry: ConfigEntry, add_entities: AddEntitiesCallback
-) -> None:
-    """Set up the TGTG sensor platform via config entry."""
-    config = entry.data
-    await _setup_entities(hass, config, add_entities)
-
-
-async def _setup_entities(
-    hass: HomeAssistant, config: Dict[str, Any], add_entities: AddEntitiesCallback
-) -> None:
-    """Set up TGTG sensor entities."""
+    """Set up the TGTG sensor platform."""
     email = config.get(CONF_EMAIL)
     item = config.get(CONF_ITEM, [""])
     access_token = config[CONF_ACCESS_TOKEN]
@@ -97,11 +81,11 @@ async def _setup_entities(
     # Initialize the coordinator
     coordinator = TGTGDataUpdateCoordinator(hass, tgtg_client, item)
     
+    # Fetch initial data
+    await coordinator.async_refresh()
+    
     # Create entities
     entities = []
-
-    # Wait for initial data
-    await coordinator.async_config_entry_first_refresh()
 
     # Create entities based on the data from the coordinator
     if item != [""]:
@@ -111,9 +95,12 @@ async def _setup_entities(
                 entities.append(TGTGSensor(coordinator, item_id))
     else:
         # Use favorites
-        for item_id in coordinator.data:
-            if item_id != "orders":
-                entities.append(TGTGSensor(coordinator, item_id))
+        try:
+            for item_id in coordinator.data:
+                if item_id != "orders":
+                    entities.append(TGTGSensor(coordinator, item_id))
+        except (KeyError, TypeError):
+            _LOGGER.error("Failed to get items from TGTG API")
 
     add_entities(entities)
 
@@ -160,10 +147,9 @@ class TGTGDataUpdateCoordinator(DataUpdateCoordinator):
                 )
                 for item in favorites:
                     item_id = item["item"]["item_id"]
-                    item_data = await self.hass.async_add_executor_job(
+                    data[item_id] = await self.hass.async_add_executor_job(
                         self.tgtg_client.get_item, item_id
                     )
-                    data[item_id] = item_data
             
             return data
         except Exception as err:
@@ -271,8 +257,3 @@ class TGTGSensor(CoordinatorEntity, SensorEntity):
             return data
         except (KeyError, TypeError):
             return {}
-
-    def update(self) -> None:
-        """Update the sensor."""
-        # This is handled by the coordinator
-        self.coordinator.async_request_refresh()
