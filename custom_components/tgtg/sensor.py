@@ -56,6 +56,16 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
 )
 
 
+def create_tgtg_client(access_token, refresh_token, cookie, user_agent):
+    """Create a TGTG client instance."""
+    return TgtgClient(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        cookie=cookie,
+        user_agent=user_agent,
+    )
+
+
 async def async_setup_platform(
     hass: HomeAssistant,
     config: ConfigType,
@@ -70,12 +80,9 @@ async def async_setup_platform(
     cookie = config[CONF_COOKIE]
     user_agent = config.get(CONF_USER_AGENT, "")
 
-    # Initialize the TGTG client
-    tgtg_client = TgtgClient(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        cookie=cookie,
-        user_agent=user_agent,
+    # Initialize the TGTG client in an executor to prevent blocking the event loop
+    tgtg_client = await hass.async_add_executor_job(
+        create_tgtg_client, access_token, refresh_token, cookie, user_agent
     )
 
     # Initialize the coordinator
@@ -127,14 +134,16 @@ class TGTGDataUpdateCoordinator(DataUpdateCoordinator):
             data = {}
             
             # Get active orders - we'll do this only once for all sensors
-           # orders = await self.hass.async_add_executor_job(
-           #     self.tgtg_client.get_active
-            #)
-            #data["orders"] = orders.get("orders", [])
+            _LOGGER.info("GET ORDERS")
+            orders = await self.hass.async_add_executor_job(
+                self.tgtg_client.get_active
+            )
+            data["orders"] = orders.get("orders", [])
             
             # Get items data
             if self.items != [""]:
                 # Fetch specified items
+                _LOGGER.info("GET SPECIFIC ITEM")
                 for item_id in self.items:
                     item_data = await self.hass.async_add_executor_job(
                         self.tgtg_client.get_item, item_id
@@ -142,12 +151,12 @@ class TGTGDataUpdateCoordinator(DataUpdateCoordinator):
                     data[item_id] = item_data
             else:
                 # Fetch favorites
+                _LOGGER.info("GET FAVORITES")
                 favorites = await self.hass.async_add_executor_job(
-                    self.tgtg_client.get_favorites
+                    self.tgtg_client.get_favorites 
                 )
                 for item in favorites:
                     item_id = item["item"]["item_id"]
-                    _LOGGER.info("ITEM:" + item)
                     data[item_id] = item
             
             return data
