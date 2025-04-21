@@ -21,4 +21,4 @@ ATTR_CANCEL_UNTIL = "cancel_until"
 ATTR_LOGO_URL = "logo_url"
 ATTR_COVER_URL = "cover_url"
 
-DEFAULT_UPDATE_INTERVAL = 10  # minutes
+DEFAULT_UPDATE_INTERVAL = 30  # minutes
